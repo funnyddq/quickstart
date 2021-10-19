@@ -1,7 +1,5 @@
 package com.example;
 
-import java.io.PrintStream;
-
 public class ProducerTest {
     public static void main(String[] args) {
         Cache caches = new Cache();
@@ -33,18 +31,19 @@ class Producer implements Runnable {
 
     @Override
     public void run() {
-        synchronized (System.out) {
-            int n = (int) Thread.currentThread().getId();
+        int n = (int) Thread.currentThread().getId();
 
-            while (true) {
-                try {
-                    Thread.sleep(1000);
+        while (true) {
+            try {
+                Thread.sleep(1000);
+                synchronized (caches) {
                     caches.push(n);
                     System.out.print(Thread.currentThread().getName());
-                    System.out.println(" push: " + n);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    System.out.print(" push: " + n);
+                    System.out.println(" now size: " + caches.size());
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -68,16 +67,17 @@ class Customer implements Runnable {
     @Override
     public void run() {
         int n;
-        synchronized (System.out) {
-            while (true) {
-                try {
-                    Thread.sleep(1000);
+        while (true) {
+            try {
+                Thread.sleep(1000);
+                synchronized (caches) {
                     n = caches.pop();
-                    System.out.print("Customer-" + Thread.currentThread().getName());
-                    System.out.println(" pop: " + n);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    System.out.print(Thread.currentThread().getName());
+                    System.out.print(" pop: " + n);
+                    System.out.println(" now size: " + caches.size());
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -104,7 +104,7 @@ class Cache {
         return size;
     }
 
-    public synchronized void push(int n) throws InterruptedException {
+    public void push(int n) throws InterruptedException {
         while (size == 10)
             wait();
 
@@ -113,13 +113,13 @@ class Cache {
         return;
     }
 
-    public synchronized int pop() throws InterruptedException {
+    public int pop() throws InterruptedException {
         while (size == 0)
             wait();
 
-        int ret = data[size--];
+        int ret = data[--size];
+
         notifyAll();
         return ret;
-
     }
 }
